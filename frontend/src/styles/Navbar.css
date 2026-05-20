@@ -1,0 +1,24 @@
+.app-navbar {
+  background: linear-gradient(90deg, #1f3b6f 0%, #2a7f66 100%);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.app-navbar .btn-outline-light {
+  border-color: rgba(255,255,255,0.85);
+  color: rgba(255,255,255,0.95);
+}
+
+.app-navbar .btn-outline-light:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.app-navbar .btn-light {
+  background: #fff;
+  color: #1f3b6f;
+}
+
+.app-navbar .me-3 {
+  color: #fff;
+}
