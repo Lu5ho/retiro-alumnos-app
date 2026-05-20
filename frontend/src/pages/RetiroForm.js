@@ -11,7 +11,7 @@
  *   onShowAdminInspectores: callback para navegar a admin de inspectores (solo admin)
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
 
 /**
@@ -30,7 +30,7 @@ const normalizarRut = (valor = '') => valor
   .replace(/-/g, '')       // Remueve guiones
   .replace(/\s+/g, '');    // Remueve espacios
 
-function RetiroForm({ usuario, onLogout, onShowAddAlumno, onShowAdminInspectores }) {
+function RetiroForm({ usuario, onShowAddAlumno, onShowAdminInspectores, alumnoPrefill }) {
   // ========== ESTADO DEL FORMULARIO ==========
   
   // RUT que el inspector escribe en el campo de búsqueda
@@ -68,6 +68,16 @@ function RetiroForm({ usuario, onLogout, onShowAddAlumno, onShowAdminInspectores
 
     return { fecha, hora };
   }, []);  // Nunca cambia, se calcula solo al montar el componente
+
+  useEffect(() => {
+    if (!alumnoPrefill) return;
+
+    setRut(alumnoPrefill.rut || '');
+    setAlumno(alumnoPrefill);
+    setMotivo('');
+    setErrorAlumno('');
+    setBuscando(false);
+  }, [alumnoPrefill]);
 
   /**
    * FUNCIÓN: Buscar alumno por RUT
@@ -150,26 +160,6 @@ function RetiroForm({ usuario, onLogout, onShowAddAlumno, onShowAdminInspectores
     } catch {
       alert('Error al autorizar');
     }
-  };
-
-  /**
-   * FUNCIÓN: Cerrar sesión
-   * 
-   * Se ejecuta cuando el usuario hace click en "Cerrar Sesión"
-   * 
-   * Limpia el formulario e invoca el callback onLogout del componente padre
-   * (que a su vez limpia localStorage y muestra nuevamente el Login)
-   */
-  const salir = () => {
-    // Limpia todo el formulario
-    setRut('');
-    setAlumno(null);
-    setMotivo('');
-    setBuscando(false);
-    setErrorAlumno('');
-    
-    // Invoca el callback del padre para cerrar sesión
-    if (onLogout) onLogout();
   };
 
   // ========== RENDERIZACIÓN ==========

@@ -67,6 +67,17 @@ function App() {
    */
   const [mostrarAdminInspectores, setMostrarAdminInspectores] = useState(false);
   const [mostrarDashboard, setMostrarDashboard] = useState(false);
+  const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(null);
+
+  const manejarSeleccionAlumnoDesdeDashboard = alumno => {
+    if (!alumno) return;
+
+    // Incluye marca temporal para asegurar actualización aunque sea el mismo alumno.
+    setAlumnoSeleccionado({ ...alumno, _selectedAt: Date.now() });
+    setMostrarDashboard(false);
+    setMostrarAddAlumno(false);
+    setMostrarAdminInspectores(false);
+  };
 
   /**
    * FUNCIÓN: Manejar login exitoso
@@ -133,9 +144,9 @@ function App() {
   let contenido = (
     <RetiroForm
       usuario={usuario}
-      onLogout={cerrarSesion}
       onShowAddAlumno={() => setMostrarAddAlumno(true)}
       onShowAdminInspectores={() => setMostrarAdminInspectores(true)}
+      alumnoPrefill={alumnoSeleccionado}
     />
   );
 
@@ -144,20 +155,6 @@ function App() {
   } else if (mostrarAddAlumno) {
     contenido = <AddAlumnoForm onBack={() => setMostrarAddAlumno(false)} />;
   }
-
-  // Estilos inline para el modal (overlay y ventana centrada)
-  const overlayStyle = {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1050
-  };
 
   const modalStyle = {
     background: '#fff',
@@ -203,7 +200,7 @@ function App() {
               </div>
             </div>
             <Suspense fallback={<div className="alert alert-info text-center">Cargando dashboard...</div>}>
-              <Dashboard />
+              <Dashboard onAlumnoDobleClick={manejarSeleccionAlumnoDesdeDashboard} />
             </Suspense>
           </div>
         </div>

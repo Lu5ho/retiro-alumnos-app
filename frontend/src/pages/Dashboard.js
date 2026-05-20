@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import '../styles/Dashboard.css';
 
-const Dashboard = () => {
+const Dashboard = ({ onAlumnoDobleClick }) => {
   const [alumnos, setAlumnos] = useState([]);
   const [cursoSeleccionado, setCursoSeleccionado] = useState('');
   const [error, setError] = useState('');
@@ -90,6 +90,10 @@ const Dashboard = () => {
                 Curso <strong>{cursoSeleccionado}</strong>: {alumnosFiltrados.length} alumno(s)
               </p>
 
+              <p className="text-muted mb-2" style={{ padding: 0 }}>
+                Doble clic en el nombre para completar el formulario de autorizacion de retiro.
+              </p>
+
               {alumnosFiltrados.length > 0 ? (
                 <div className="table-responsive">
                   <table className="table table-striped table-hover align-middle">
@@ -105,7 +109,13 @@ const Dashboard = () => {
                       {alumnosFiltrados.map(alumno => (
                         <tr key={alumno.id || alumno.rut}>
                           <td>{alumno.rut}</td>
-                          <td>{alumno.nombre}</td>
+                          <td
+                            style={{ cursor: 'pointer' }}
+                            title="Doble clic para autocompletar autorizacion"
+                            onDoubleClick={() => onAlumnoDobleClick && onAlumnoDobleClick(alumno)}
+                          >
+                            {alumno.nombre}
+                          </td>
                           <td>{alumno.apellidos}</td>
                           <td>{alumno.curso}</td>
                         </tr>
