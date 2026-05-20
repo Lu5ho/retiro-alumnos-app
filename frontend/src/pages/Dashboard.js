@@ -1,192 +1,123 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import api from '../services/api';
 import '../styles/Dashboard.css';
 
 const Dashboard = () => {
-  const [retirosPorFecha, setRetirosPorFecha] = useState([]);
-  const [distribucionAlumnos, setDistribucionAlumnos] = useState([]);
-  const [actividadInspectores, setActividadInspectores] = useState([]);
+  const [alumnos, setAlumnos] = useState([]);
+  const [cursoSeleccionado, setCursoSeleccionado] = useState('');
+  const [error, setError] = useState('');
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    cargarDatos();
+    cargarAlumnos();
   }, []);
 
-  const cargarDatos = async () => {
+  const cargarAlumnos = async () => {
     try {
       setCargando(true);
-      
-      const [resRetiros, resAlumnos, resInspectores] = await Promise.all([
-        api.get('/retiros'),
-        api.get('/alumnos'),
-        api.get('/inspectores')
-      ]);
+      setError('');
 
-      procesarRetirosPorFecha(resRetiros.data);
-      procesarDistribucionAlumnos(resAlumnos.data);
-      procesarActividadInspectores(resInspectores.data, resRetiros.data);
-      
+      const resAlumnos = await api.get('/alumnos');
+      const listaAlumnos = Array.isArray(resAlumnos.data) ? resAlumnos.data : [];
+
+      setAlumnos(listaAlumnos);
+
+      const cursosUnicos = [...new Set(
+        listaAlumnos
+          .map(alumno => (alumno.curso || '').trim())
+          .filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+
+      if (cursosUnicos.length > 0) {
+        setCursoSeleccionado(cursosUnicos[0]);
+      }
     } catch (error) {
-      console.error('Error cargando datos:', error);
+      console.error('Error cargando alumnos:', error);
+      setError('No se pudieron cargar los alumnos. Intenta nuevamente.');
     } finally {
       setCargando(false);
     }
   };
 
-  // Procesa retiros agrupados por fecha
-  const procesarRetirosPorFecha = (retiros) => {
-    const agrupados = {};
-    retiros.forEach(retiro => {
-      const fecha = new Date(retiro.fecha).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
-      agrupados[fecha] = (agrupados[fecha] || 0) + 1;
-    });
+  const cursos = [...new Set(
+    alumnos
+      .map(alumno => (alumno.curso || '').trim())
+      .filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
 
-    const datos = Object.keys(agrupados).map(fecha => ({
-      fecha,
-      retiros: agrupados[fecha]
-    }));
-    setRetirosPorFecha(datos);
-  };
-
-  // Procesa distribución de alumnos por estado
-  const procesarDistribucionAlumnos = (alumnos) => {
-    const estados = { 'Activo': 0, 'Retirado': 0, 'Pendiente': 0 };
-    alumnos.forEach(alumno => {
-      if (alumno.estado && estados.hasOwnProperty(alumno.estado)) {
-        estados[alumno.estado]++;
-      } else {
-        estados['Activo']++;
-      }
-    });
-
-    const datos = Object.keys(estados).map(estado => ({
-      name: estado,
-      value: estados[estado]
-    }));
-    setDistribucionAlumnos(datos);
-  };
-
-  // Procesa actividad de inspectores
-  const procesarActividadInspectores = (inspectores, retiros) => {
-    const actividad = {};
-    
-    inspectores.forEach(inspector => {
-      actividad[inspector.nombre] = 0;
-    });
-
-    retiros.forEach(retiro => {
-      if (retiro.inspector && actividad.hasOwnProperty(retiro.inspector)) {
-        actividad[retiro.inspector]++;
-      }
-    });
-
-    const datos = Object.keys(actividad).map(inspector => ({
-      inspector,
-      retiros: actividad[inspector]
-    }));
-    setActividadInspectores(datos);
-  };
-
-  const COLORES = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+  const alumnosFiltrados = alumnos.filter(
+    alumno => (alumno.curso || '').trim() === cursoSeleccionado
+  );
 
   if (cargando) {
     return (
       <div className="dashboard-container">
-        <div className="alert alert-info text-center">Cargando datos...</div>
+        <div className="alert alert-info text-center">Cargando alumnos...</div>
       </div>
     );
   }
 
   return (
     <div className="dashboard-container">
-      <h1 className="mb-4" style={{ fontFamily: 'Arial Black, sans-serif', fontSize: '2.5rem', letterSpacing: '1px' }}>📊 Dashboard</h1>
+      <h1 className="mb-4 dashboard-title">Filtrador de Alumnos por Curso</h1>
 
-      <div className="row">
-        {/* Gráfico de Retiros por Fecha */}
-        <div className="col-md-6 mb-4">
-          <div className="card">
-            <div className="card-header bg-primary text-white">
-              📈 Retiros por Fecha
-            </div>
-            <div className="card-body">
-              {retirosPorFecha.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={retirosPorFecha}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="fecha" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="retiros" stroke="#0088FE" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="text-muted">No hay datos de retiros</p>
-              )}
-            </div>
-          </div>
-        </div>
+      <div className="card">
+        <div className="card-header bg-primary text-white">Buscar por curso</div>
+        <div className="card-body">
+          {error && <div className="alert alert-danger">{error}</div>}
 
-        {/* Gráfico de Distribución de Alumnos */}
-        <div className="col-md-6 mb-4">
-          <div className="card">
-            <div className="card-header bg-success text-white">
-              👥 Distribución de Alumnos
-            </div>
-            <div className="card-body">
-              {distribucionAlumnos.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={distribucionAlumnos}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, value }) => `${name}: ${value}`}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {distribucionAlumnos.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORES[index % COLORES.length]} />
+          {cursos.length === 0 ? (
+            <p className="text-muted">No hay cursos registrados.</p>
+          ) : (
+            <>
+              <div className="mb-3">
+                <label htmlFor="selectorCurso" className="form-label fw-semibold">Selecciona un curso</label>
+                <select
+                  id="selectorCurso"
+                  className="form-select"
+                  value={cursoSeleccionado}
+                  onChange={e => setCursoSeleccionado(e.target.value)}
+                >
+                  {cursos.map(curso => (
+                    <option key={curso} value={curso}>
+                      {curso}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <p className="resultado-resumen">
+                Curso <strong>{cursoSeleccionado}</strong>: {alumnosFiltrados.length} alumno(s)
+              </p>
+
+              {alumnosFiltrados.length > 0 ? (
+                <div className="table-responsive">
+                  <table className="table table-striped table-hover align-middle">
+                    <thead className="table-light">
+                      <tr>
+                        <th>RUT</th>
+                        <th>Nombre</th>
+                        <th>Apellidos</th>
+                        <th>Curso</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {alumnosFiltrados.map(alumno => (
+                        <tr key={alumno.id || alumno.rut}>
+                          <td>{alumno.rut}</td>
+                          <td>{alumno.nombre}</td>
+                          <td>{alumno.apellidos}</td>
+                          <td>{alumno.curso}</td>
+                        </tr>
                       ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                    </tbody>
+                  </table>
+                </div>
               ) : (
-                <p className="text-muted">No hay datos de alumnos</p>
+                <p className="text-muted">No hay alumnos para el curso seleccionado.</p>
               )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="row">
-        {/* Gráfico de Actividad de Inspectores */}
-        <div className="col-md-12 mb-4">
-          <div className="card">
-            <div className="card-header bg-warning text-dark">
-              🔍 Actividad de Inspectores
-            </div>
-            <div className="card-body">
-              {actividadInspectores.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={actividadInspectores}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="inspector" angle={-45} textAnchor="end" height={100} />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="retiros" fill="#FFC658" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="text-muted">No hay datos de inspectores</p>
-              )}
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>

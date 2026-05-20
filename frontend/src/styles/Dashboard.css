@@ -12,6 +12,12 @@
   margin-top: 5px;
 }
 
+.dashboard-title {
+  font-family: Arial Black, sans-serif;
+  font-size: 2rem;
+  letter-spacing: 0.5px;
+}
+
 .card {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: none;
@@ -39,4 +45,10 @@
   font-size: 14px;
   text-align: center;
   padding: 20px;
+}
+
+.resultado-resumen {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 14px;
 }
